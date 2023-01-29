@@ -7,52 +7,73 @@ const port = process.env.PORT || 5000;
 
 app.use(express.json())
 app.use(cors())
+require('dotenv').config();
+
+// app.get('/', async (req, res) => {
+//     res.send('hello')
+// })
 
 
-app.get('/', async (req, res) => {
-    res.send('hello')
-})
-
-
-const uri = `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@cluster0.uzz7izn.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.USER}:${process.env.USER_PASSWORD}@cluster0.uzz7izn.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
-function verifyJWT(req, res, next) {
-    const authHeader = req.headers.authorization;
+// function verifyJWT(req, res, next) {
+//     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-        res.status(403).send('unauthorized')
-    }
-    const token = authHeader.split(' ')[1];
+//     if (!authHeader) {
+//         res.status(403).send('unauthorized')
+//     }
+//     const token = authHeader.split(' ')[1];
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
-        if (err) {
-            return res.status(403).send({ message: 'accesss forbidden' })
-        }
-        req.decoded = decoded;
-        next()
-    })
-}
+//     jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
+//         if (err) {
+//             return res.status(403).send({ message: 'accesss forbidden' })
+//         }
+//         req.decoded = decoded;
+//         next()
+//     })
+// }
 
 async function run() {
     try {
-        const resellProductCollections = client.db('resellProducts').collection('resellProductCollection');
-        const usersCollections = client.db('resellProducts').collection('usersCollection');
+        const billingCollection = client.db('programming-job-task').collection('billingCollection');
+        const usersCollection = client.db('programming-job-task').collection('usersCollection');
         
-
-        app.get('/products', async (req, res) => {
+        app.get('/registration', async (req, res) => {
             const query = {}
-            const result = await resellProductCollections.find(query).toArray();
+            const result = await usersCollection.find(query).toArray();
             res.send(result)
         })
 
-        app.get('/users', async (req, res) => {
+        app.get('/billing-list', async (req, res) => {
             const query = {}
-            const result = await usersCollections.find(query).toArray();
+            const result = await billingCollection.find(query).toArray();
             res.send(result)
         })
+
+        app.post('/registration', async (req, res) => {
+                const user = req.body;
+                const result = await usersCollection.insertOne(user);
+                console.log(user)
+                res.send(result)
+            })
+
+        app.post('/add-billing', async (req, res) => {
+                const bill = req.body;
+                const result = await billingCollection.insertOne(bill);
+                console.log(bill)
+                res.send(result)
+            })
+
+        // app.get('/products', async (req, res) => {
+        //     const query = {}
+        //     const result = await resellProductCollections.find(query).toArray();
+        //     res.send(result)
+        // })
+
+        
 
 
         // app.get('/products1', verifyJWT, async (req, res) => {
@@ -85,11 +106,7 @@ async function run() {
         //     res.send(result)
         // })
 
-        // app.post('/products', async (req, res) => {
-        //     const product = req.body;
-        //     const result = await resellProductCollections.insertOne(product);
-        //     res.send(result)
-        // })
+        // 
 
         // app.post('/users', async (req, res) => {
         //     const user = req.body;
