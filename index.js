@@ -19,35 +19,27 @@ const uri = `mongodb+srv://${process.env.USER}:${process.env.USER_PASSWORD}@clus
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 function verifyJWT(req, res, next) {
-    // const authHeader = req.headers.authorization;
-    const auth = req
-    console.log(req.headers)
-    // if (!authHeader) {
-    //     res.status(403).send('unauthorized')
-    // }
-    // const token = authHeader.split(' ')[1];
-    // console.log(token)
-    // jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
-    //     if (err) {
-    //         console.log(err)
-    //         return res.status(403).send({ message: 'accesss forbidden' })
+    const authHeader = req.headers.authorization;
+    console.log(authHeader)
+    if (!authHeader) {
+        res.status(403).send('unauthorized')
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
+        if (err) {
+            console.log(err)
+            return res.status(403).send({ message: 'accesss forbidden' })
             
-    //     }
-    //     req.decoded = decoded;
-    //     next()
-    // })
+        }
+        req.decoded = decoded;
+        next()
+    })
 }
 
 async function run() {
     try {
         const billingCollection = client.db('programming-job-task').collection('billingCollection');
         const usersCollection = client.db('programming-job-task').collection('usersCollection');
-        
-        // app.get('/user', async (req, res) => {
-        //     const query = {}
-        //     const result = await usersCollection.find(query).toArray();
-        //     res.send(result)
-        // })
 
         app.post('/add-billing', async (req, res) => {
             const bill = req.body;
@@ -57,7 +49,9 @@ async function run() {
 
         app.get('/billing-list', async (req, res) => {
             const query = {}
-            const result = await billingCollection.find(query).toArray();
+            // const result = await billingCollection.find(query).sort({"_id": -1}).toArray();
+            const cursor = billingCollection.find(query).sort({"_id": -1});
+            const result = await cursor.toArray();
             res.send(result)
         })
 
@@ -68,7 +62,12 @@ async function run() {
                 res.send(result)
             })
 
-        
+        app.delete('/delete-billing/:id',verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await billingCollection.deleteOne(filter)
+            res.send(result)
+        })
 
         
 
@@ -94,12 +93,7 @@ async function run() {
         // 
 
 
-        // app.delete('/products/:id',verifyJWT, async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = { _id: ObjectId(id) };
-        //     const result = await resellProductCollections.deleteOne(filter)
-        //     res.send(result)
-        // })
+        
 
 
         // app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
