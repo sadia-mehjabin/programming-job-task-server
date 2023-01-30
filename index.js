@@ -18,22 +18,24 @@ const uri = `mongodb+srv://${process.env.USER}:${process.env.USER_PASSWORD}@clus
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-
 function verifyJWT(req, res, next) {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-        res.status(403).send('unauthorized')
-    }
-    const token = authHeader.split(' ')[1];
-
-    jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
-        if (err) {
-            return res.status(403).send({ message: 'accesss forbidden' })
-        }
-        req.decoded = decoded;
-        next()
-    })
+    // const authHeader = req.headers.authorization;
+    const auth = req
+    console.log(req.headers)
+    // if (!authHeader) {
+    //     res.status(403).send('unauthorized')
+    // }
+    // const token = authHeader.split(' ')[1];
+    // console.log(token)
+    // jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
+    //     if (err) {
+    //         console.log(err)
+    //         return res.status(403).send({ message: 'accesss forbidden' })
+            
+    //     }
+    //     req.decoded = decoded;
+    //     next()
+    // })
 }
 
 async function run() {
@@ -41,25 +43,20 @@ async function run() {
         const billingCollection = client.db('programming-job-task').collection('billingCollection');
         const usersCollection = client.db('programming-job-task').collection('usersCollection');
         
-        app.get('/registration', async (req, res) => {
-            const query = {}
-            const result = await usersCollection.find(query).toArray();
-            res.send(result)
-        })
-
-        // app.get('/billing-list', async (req, res) => {
+        // app.get('/user', async (req, res) => {
         //     const query = {}
-        //     const result = await billingCollection.find(query).toArray();
+        //     const result = await usersCollection.find(query).toArray();
         //     res.send(result)
         // })
 
-        app.get('/billing-list', verifyJWT, async (req, res) => {
-            const email = req.query.email;
-            const decodedEmail = req.decoded.email;
-            if (email !== decodedEmail) {
-                return res.status(403).send({ message: 'unauthorised action' })
-            }
-            const query = { email: email }
+        app.post('/add-billing', async (req, res) => {
+            const bill = req.body;
+            const result = await billingCollection.insertOne(bill);
+            res.send(result)
+        })
+
+        app.get('/billing-list', async (req, res) => {
+            const query = {}
             const result = await billingCollection.find(query).toArray();
             res.send(result)
         })
@@ -71,12 +68,7 @@ async function run() {
                 res.send(result)
             })
 
-        app.post('/add-billing', async (req, res) => {
-                const bill = req.body;
-                const result = await billingCollection.insertOne(bill);
-                console.log(bill)
-                res.send(result)
-            })
+        
 
         
 
@@ -168,7 +160,7 @@ async function run() {
                 return res.send({ newAccessToken: token })
             }
             res.status(403).send({ newAccessToken: '' })
-
+            console.log(user)
         })
     }
     finally {
