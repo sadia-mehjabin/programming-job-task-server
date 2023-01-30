@@ -9,9 +9,9 @@ app.use(express.json())
 app.use(cors())
 require('dotenv').config();
 
-// app.get('/', async (req, res) => {
-//     res.send('hello')
-// })
+app.get('/', async (req, res) => {
+    res.send('hello')
+})
 
 
 const uri = `mongodb+srv://${process.env.USER}:${process.env.USER_PASSWORD}@cluster0.uzz7izn.mongodb.net/?retryWrites=true&w=majority`;
@@ -19,22 +19,22 @@ const uri = `mongodb+srv://${process.env.USER}:${process.env.USER_PASSWORD}@clus
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
-// function verifyJWT(req, res, next) {
-//     const authHeader = req.headers.authorization;
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
 
-//     if (!authHeader) {
-//         res.status(403).send('unauthorized')
-//     }
-//     const token = authHeader.split(' ')[1];
+    if (!authHeader) {
+        res.status(403).send('unauthorized')
+    }
+    const token = authHeader.split(' ')[1];
 
-//     jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
-//         if (err) {
-//             return res.status(403).send({ message: 'accesss forbidden' })
-//         }
-//         req.decoded = decoded;
-//         next()
-//     })
-// }
+    jwt.verify(token, process.env.ACCESS_TOKEN_NEW, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'accesss forbidden' })
+        }
+        req.decoded = decoded;
+        next()
+    })
+}
 
 async function run() {
     try {
@@ -47,8 +47,19 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/billing-list', async (req, res) => {
-            const query = {}
+        // app.get('/billing-list', async (req, res) => {
+        //     const query = {}
+        //     const result = await billingCollection.find(query).toArray();
+        //     res.send(result)
+        // })
+
+        app.get('/billing-list', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'unauthorised action' })
+            }
+            const query = { email: email }
             const result = await billingCollection.find(query).toArray();
             res.send(result)
         })
@@ -67,25 +78,7 @@ async function run() {
                 res.send(result)
             })
 
-        // app.get('/products', async (req, res) => {
-        //     const query = {}
-        //     const result = await resellProductCollections.find(query).toArray();
-        //     res.send(result)
-        // })
-
         
-
-
-        // app.get('/products1', verifyJWT, async (req, res) => {
-        //     const email = req.query.email;
-        //     const decodedEmail = req.decoded.email;
-        //     if (email !== decodedEmail) {
-        //         return res.status(403).send({ message: 'unauthorised action' })
-        //     }
-        //     const query = { email: email }
-        //     const result = await resellProductCollections.find(query).toArray();
-        //     res.send(result)
-        // })
 
         // app.get('/myOrders', verifyJWT, async (req, res) => {
         //     const email = req.query.email;
@@ -108,17 +101,6 @@ async function run() {
 
         // 
 
-        // app.post('/users', async (req, res) => {
-        //     const user = req.body;
-        //     const result = await usersCollections.insertOne(user);
-        //     res.send(result)
-        // })
-
-        // app.post('/bookedProducts', async (req, res) => {
-        //     const bookedProducts = req.body;
-        //     const result = await bookedProductsCollections.insertOne(bookedProducts);
-        //     res.send(result)
-        // })
 
         // app.delete('/products/:id',verifyJWT, async (req, res) => {
         //     const id = req.params.id;
@@ -177,17 +159,17 @@ async function run() {
         //     res.send({ isAdmin: user?.role === 'admin' })
         // })
 
-        // app.get('/jwt', async (req, res) => {
-        //     const email = req.query.email;
-        //     const query = { email: email }
-        //     const user = await usersCollections.findOne(query);
-        //     if (user) {
-        //         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN_NEW)
-        //         return res.send({ newAccessToken: token })
-        //     }
-        //     res.status(403).send({ newAccessToken: '' })
+        app.get('/jwt', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user) {
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN_NEW)
+                return res.send({ newAccessToken: token })
+            }
+            res.status(403).send({ newAccessToken: '' })
 
-        // })
+        })
     }
     finally {
 
